@@ -1,6 +1,6 @@
-###目标：使用SQL实现嵌入式关系型数据库
+**目标：使用SQL实现嵌入式关系型数据库**
 sqlite3模块针对SQLite实现了兼容Python DB-API 2.0的接口，是一种进程内的关系型数据库。不同于MySQL，PostgreSQL,或者Oracle这一类使用分离型数据服务器的数据库系统，SQLite可以将数据库系统嵌入到应用内。它快速，灵活的特点，使它能适用于某些应用的原型和生产部署。
-创建一个数据库
+##创建一个数据库
 SQLite的数据库是保存在文件系统中的一个文件。该库可以管理对文件的访问，包括当有多个使用者同时使用它时，能够对文件加锁防止文件损坏。当文件第一次被访问时，数据库就创建好了，应用负责管理数据库内的表定义或模式。
 下面的示例在使用connect()之前查找数据库文件，以便于知道什么时候为新数据库创建模式。
 ```python
@@ -39,7 +39,7 @@ $ python3 sqlite3_createdb.py
 
 Database exists, assume schema does, too.
 ```
-创建好数据库文件后，下一步就是创建模式以便于我们在数据库中定义表。本节中接下来的示例都会使用同一个数据库模式来管理任务。数据库模式的具体内容如下两表所示。
+创建好数据库文件后，下一步就是创建模式以便于我们在数据库中定义表。本节中接下来的示例都会使用同一个数据库模式来管理任务。具体内容如下两表所示。
 The project Table
 
 |Column|Type|Description|
@@ -142,7 +142,7 @@ $ sqlite3 todo.db 'select * from task'
 3|1|write about sqlite3|active|2017-07-31||pymotw
 ```
 
-检索数据
+##检索数据
 在Python程序内，我们可以通过数据库连接创建一个Cursor(游标）去检索保存在任务表中的数据。Cursor(游标)可以产生一致的数据视图，并且这也是与SQLite等事务数据库系统交互的主要方式。
 
 ```python
@@ -167,9 +167,61 @@ with sqlite3.connect(db_filename) as conn:
 
 查询过程主要分两步。第一步，通过运行cursor(游标)的execute()方法告诉数据库引擎需要收集哪些数据。然后使用fetchall()方法去检索收集的结果。它会返回一个元组序列，这个元组序列包括了select子句查询的内容。
 
+```bash
+$ python3 sqlite3_select_tasks.py
 
+ 1 [1] write about select        [done    ] (2016-04-25)
+ 2 [1] write about random        [waiting ] (2016-08-22)
+ 3 [1] write about sqlite3       [active  ] (2017-07-31)
+```
 
+我们可以使用fetchone()一次检索一个结果，或者使用fetchmany()在固定大小的情况下批量处理多个结果。
 
+```python
+# sqlite3_select_variations.py
+import sqlite3
+
+db_filename = 'todo.db'
+
+with sqlite3.connect(db_filename) as conn:
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    select name, description, deadline from project
+    where name = 'pymotw'
+    """)
+    name, description, deadline = cursor.fetchone()
+
+    print('Project details for {} ({})\n  due {}'.format(
+        description, name, deadline))
+
+    cursor.execute("""
+    select id, priority, details, status, deadline from task
+    where project = 'pymotw' order by deadline
+    """)
+
+    print('\nNext 5 tasks:')
+    for row in cursor.fetchmany(5):
+        task_id, priority, details, status, deadline = row
+        print('{:2d} [{:d}] {:<25} [{:<8}] ({})'.format(
+            task_id, priority, details, status, deadline))
+```
+
+我们传入fetchmany()的参数是指它要返回的最大项数。如果有效的项数比这个最大项数小，则返回序列中的项数比最大项数小。
+
+```bash
+$ python3 sqlite3_select_variations.py
+
+Project details for Python Module of the Week (pymotw)
+  due 2016-11-01
+
+Next 5 tasks:
+ 1 [1] write about select        [done    ] (2016-04-25)
+ 2 [1] write about random        [waiting ] (2016-08-22)
+ 3 [1] write about sqlite3       [active  ] (2017-07-31)
+```
+
+##查找元数据
 
 
 
