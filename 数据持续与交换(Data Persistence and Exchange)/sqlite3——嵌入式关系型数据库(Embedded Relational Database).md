@@ -202,7 +202,8 @@ with sqlite3.connect(db_filename) as conn:
 
     print('\nNext 5 tasks:')
     for row in cursor.fetchmany(5):
-        task_id, priority, details, status, deadline = row
+        task_id, priority, details, s
+        tatus, deadline = row
         print('{:2d} [{:d}] {:<25} [{:<8}] ({})'.format(
             task_id, priority, details, status, deadline))
 ```
@@ -222,19 +223,42 @@ Next 5 tasks:
 ```
 
 ##查找元数据
+在DB-API 2.0规范里有说，在调用execute()之后，cursor应该将其description属性保存fetch方法返回的数据信息。在API规范中，description是一个包含了列名，类型，显示大小，内部大小，精度，比例以及表示是否接受空值的标志的一个元组序列。
 
+```python
+# sqlite3_cursor_description.py
+import sqlite3
 
+db_filename = 'todo.db'
 
+with sqlite3.connect(db_filename) as conn:
+    cursor = conn.cursor()
 
+    cursor.execute("""
+    select * from task where project = 'pymotw'
+    """)
 
+    print('Task table has these columns:')
+    for colinfo in cursor.description:
+        print(colinfo)
+```
 
+因为sqlite3不会对插入数据库的数据进行强制类型转换或大小限制，所以只有列名。
 
+```bash
+$ python3 sqlite3_cursor_description.py
 
+Task table has these columns:
+('id', None, None, None, None, None, None)
+('priority', None, None, None, None, None, None)
+('details', None, None, None, None, None, None)
+('status', None, None, None, None, None, None)
+('deadline', None, None, None, None, None, None)
+('completed_on', None, None, None, None, None, None)
+('project', None, None, None, None, None, None)
+```
 
-
-
-
-
+##行对象
 
 
 
