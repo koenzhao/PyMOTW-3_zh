@@ -259,6 +259,59 @@ Task table has these columns:
 ```
 
 ##行对象
+默认情况下，fetch方法返回数据库中的值(row)是一个元组。调用者应该知道查询中列的顺序，并从元组中提取出各个值。当查询中值的数量增加，或提取数据的代码在库中扩展时，通常使用一个对象和列名来访问值的处理方式会更加方便。这样的话，当我们编辑新的查询时，元组内容的数量和顺序都可以修改，但与查询结果相关的代码基本不用改动。
+Connection对象具有一个row_factory属性，允许通过调用代码来控制创建对象的类型，以表示查询结果中的每一行。sqlite3中还包括一个可以作为row factory(行工厂)的Row类。我们可以通过Row对象，使用列索引或列名去访问指定列的值。
+
+```python
+# sqlite3_row_factory.py
+import sqlite3
+
+db_filename = 'todo.db'
+
+with sqlite3.connect(db_filename) as conn:
+    # Change the row factory to use Row
+    conn.row_factory = sqlite3.Row
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    select name, description, deadline from project
+    where name = 'pymotw'
+    """)
+    name, description, deadline = cursor.fetchone()
+
+    print('Project details for {} ({})\n  due {}'.format(
+        description, name, deadline))
+
+    cursor.execute("""
+    select id, priority, status, deadline, details from task
+    where project = 'pymotw' order by deadline
+    """)
+
+    print('\nNext 5 tasks:')
+    for row in cursor.fetchmany(5):
+        print('{:2d} [{:d}] {:<25} [{:<8}] ({})'.format(
+            row['id'], row['priority'], row['details'],
+            row['status'], row['deadline'],
+        ))
+```
+
+sqlite3_row_factory.py是sqlite3_select_variations.py中的例子，只是用Row对象而不是元组。项目表中的行仍然是通过访问列值的位置来打印的，但打印task的时候我们改用关键字查找，所以后面列的顺序被更改了也没有关系。
+
+```bash
+$ python3 sqlite3_row_factory.py
+
+Project details for Python Module of the Week (pymotw)
+  due 2016-11-01
+
+Next 5 tasks:
+ 1 [1] write about select        [done    ] (2016-04-25)
+ 2 [1] write about random        [waiting ] (2016-08-22)
+ 3 [1] write about sqlite3       [active  ] (2017-07-31)
+```
+
+##使用变量查询
+
 
 
 
