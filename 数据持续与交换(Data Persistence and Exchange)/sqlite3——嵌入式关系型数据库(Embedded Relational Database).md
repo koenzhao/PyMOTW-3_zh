@@ -311,6 +311,167 @@ Next 5 tasks:
 ```
 
 ##使用变量查询
+如果查询定义为字面量字符串嵌入到程序中，这种查询方式是不灵活的。举个例子，当另一个项目也添加到数据库中，想要显示前5个任务的话就应该更新，以处理其中的某一个项目。一种更灵活的方式是，建立一个SQL语句，在Python中结合相应的值得到所需的查询。然而，以这种方式建立一个查询语句是危险的，我们应该避免这种方式。如果你不能完全正确地转义查询语句中变量部分的特殊字符，则会导致SQL解析出错，或还有一种更糟的情况，有一类安全漏洞称为数据库注入，它允许入侵者在数据库中执行任意SQL语句。
+在查询中使用动态值的正确做法是，利用随SQL指令一起传入execute()的宿主变量。当SQL语句执行时，SQL语句中的占位符会被替换为宿主变量的值。在SQL语句解析之前，使用宿主变量而不是插入任意的值，可以避免注入式攻击，因为不可靠值没有机会去影响SQL的解析。SQLite支持两种形式带占位符的查询，分别是位置参数和命名参数。
+###位置参数
+一个问好(?)代表一个位置参数，将作为元组的一个成员传入execute()。
+
+```python
+# sqlite3_argument_positional.py
+import sqlite3
+import sys
+
+db_filename = 'todo.db'
+project_name = sys.argv[1]
+
+with sqlite3.connect(db_filename) as conn:
+    cursor = conn.cursor()
+
+    query = """
+    select id, priority, details, status, deadline from task
+    where project = ?
+    """
+
+    cursor.execute(query, (project_name,))
+
+    for row in cursor.fetchall():
+        task_id, priority, details, status, deadline = row
+        print('{:2d} [{:d}] {:<25} [{:<8}] ({})'.format(
+            task_id, priority, details, status, deadline))
+```
+
+命令行参数可以作为一个位置参数安全地传递给查询，其他恶意数据就没有机会能够破坏数据库。
+
+```bash
+$ python3 sqlite3_argument_positional.py pymotw
+
+ 1 [1] write about select        [done    ] (2016-04-25)
+ 2 [1] write about random        [waiting ] (2016-08-22)
+ 3 [1] write about sqlite3       [active  ] (2017-07-31)
+```
+
+###命名参数
+当查询需要许多参数，或在查询中某些参数多次重复出现时，我们应当使用命名参数。命名参数需要带一个:前缀（如，:param_name）。
+
+```python
+# sqlite3_argument_named.py
+import sqlite3
+import sys
+
+db_filename = 'todo.db'
+project_name = sys.argv[1]
+
+with sqlite3.connect(db_filename) as conn:
+    cursor = conn.cursor()
+
+    query = """
+    select id, priority, details, status, deadline from task
+    where project = :project_name
+    order by deadline, priority
+    """
+
+    cursor.execute(query, {'project_name': project_name})
+
+    for row in cursor.fetchall():
+        task_id, priority, details, status, deadline = row
+        print('{:2d} [{:d}] {:<25} [{:<8}] ({})'.format(
+            task_id, priority, details, status, deadline))
+```
+
+位置参数和命名参数都不需要加引号或转义，因为查询解析器会对他们做特殊处理。
+
+```bash
+$ python3 sqlite3_argument_named.py pymotw
+
+ 1 [1] write about select        [done    ] (2016-04-25)
+ 2 [1] write about random        [waiting ] (2016-08-22)
+ 3 [1] write about sqlite3       [active  ] (2017-07-31)
+```
+
+查询参数可以用于select,insert和update语句，查询中字面量出现的地方都可以放置查询参数。
+
+```python
+# sqlite3_argument_update.py
+
+import sqlite3
+import sys
+
+db_filename = 'todo.db'
+id = int(sys.argv[1])
+status = sys.argv[2]
+
+with sqlite3.connect(db_filename) as conn:
+    cursor = conn.cursor()
+    query = "update task set status = :status where id = :id"
+    cursor.execute(query, {'status': status, 'id': id})
+```
+
+上面程序中的update语句使用了两个命名参数。其中id是用来定位所要修改的行，status是要写入表中的值。
+
+```bash
+$ python3 sqlite3_argument_update.py 2 done
+$ python3 sqlite3_argument_named.py pymotw
+
+ 1 [1] write about select        [done    ] (2016-04-25)
+ 2 [1] write about random        [done    ] (2016-08-22)
+ 3 [1] write about sqlite3       [active  ] (2017-07-31)
+```
+
+##批量加载
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
