@@ -466,6 +466,142 @@ $ python3 sqlite3_argument_named.py pymotw
 ```
 
 ##定义新列类型
+SQLite对整数，浮点数，文本列具备原生的支持。sqlite3会自动将这些类型的数据从Python的表示转换到一种数据库存储的值，并且可以根据需要进行反向转换。数据库中的整数会根据数值的大小加载为整型(int)或长整型(long)。文本信息会被保存并检索成一个字符串，除非Connection的text_factory属性被修改了。
+尽管SQLite内部只支持几种数据类型，但是sqlite3支持了自定义类型的功能，所以在Python应用中可以存储任意数据类型列。除了默认支持自动转换的那些类型，其他数据类型的转换可以在数据库连接中使用detect_types标志打开。如果定义表时，列使用所要求的类型来声明，可以使用PARSE_DECLTYPES。
+```python
+# sqlite3_date_types.py
+import sqlite3
+import sys
+
+db_filename = 'todo.db'
+
+sql = "select id, details, deadline from task"
+
+
+def show_deadline(conn):
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(sql)
+    row = cursor.fetchone()
+    for col in ['id', 'details', 'deadline']:
+        print('  {:<8}  {!r:<26} {}'.format(
+            col, row[col], type(row[col])))
+    return
+
+
+print('Without type detection:')
+with sqlite3.connect(db_filename) as conn:
+    show_deadline(conn)
+
+print('\nWith type detection:')
+with sqlite3.connect(db_filename,
+                     detect_types=sqlite3.PARSE_DECLTYPES,
+                     ) as conn:
+    show_deadline(conn)
+```
+sqlite3提供了针对日期及时间戳的转换器，它使用datetime模块中的date类和datetime类表示Python中的值。日期相关的转换器都会在类型检测的时候自动打开。
+```bash
+$ python3 sqlite3_date_types.py
+
+Without type detection:
+  id        1                          <class 'int'>
+  details   'write about select'       <class 'str'>
+  deadline  '2016-04-25'               <class 'str'>
+
+With type detection:
+  id        1                          <class 'int'>
+  details   'write about select'       <class 'str'>
+  deadline  datetime.date(2016, 4, 25) <class 'datetime.date'>
+```
+定义一个新类型需要先注册两个函数。Adapter(适配器)会接收一个Python对象然后返回一个可以存储在数据库中的字符串。Converter(转换器)接收一个数据库的字符串然后返回一个Python对象。可以通过register_adapter()定义一个适配器函数，register_converter()定义一个转换器函数。
+```python
+# sqlite3_custom_type.py
+import pickle
+import sqlite3
+
+db_filename = 'todo.db'
+
+
+def adapter_func(obj):
+    """Convert from in-memory to storage representation.
+    """
+    print('adapter_func({})\n'.format(obj))
+    return pickle.dumps(obj)
+
+
+def converter_func(data):
+    """Convert from storage to in-memory representation.
+    """
+    print('converter_func({!r})\n'.format(data))
+    return pickle.loads(data)
+
+
+class MyObj:
+
+    def __init__(self, arg):
+        self.arg = arg
+
+    def __str__(self):
+        return 'MyObj({!r})'.format(self.arg)
+
+
+# Register the functions for manipulating the type.
+sqlite3.register_adapter(MyObj, adapter_func)
+sqlite3.register_converter("MyObj", converter_func)
+
+# Create some objects to save.  Use a list of tuples so
+# the sequence can be passed directly to executemany().
+to_save = [
+    (MyObj('this is a value to save'),),
+    (MyObj(42),),
+]
+
+with sqlite3.connect(
+        db_filename,
+        detect_types=sqlite3.PARSE_DECLTYPES) as conn:
+    # Create a table with column of type "MyObj"
+    conn.execute("""
+    create table if not exists obj (
+        id    integer primary key autoincrement not null,
+        data  MyObj
+    )
+    """)
+    cursor = conn.cursor()
+
+    # Insert the objects into the database
+    cursor.executemany("insert into obj (data) values (?)",
+                       to_save)
+
+    # Query the database for the objects just saved
+    cursor.execute("select id, data from obj")
+    for obj_id, obj in cursor.fetchall():
+        print('Retrieved', obj_id, obj)
+        print('  with type', type(obj))
+        print()
+```
+上面的示例程序使用pickle将一个对象转换为一个字符串后保存在数据库中，这对存储任意对象很有用，但是它不支持按对象属性查询。真正的对象关系映射器(ORM, object-relational mapper)，比如SQLAlchemy会将属性值存储在单独列中，这对大量数据更为有效。
+```bash
+$ python3 sqlite3_custom_type.py
+
+adapter_func(MyObj('this is a value to save'))
+
+adapter_func(MyObj(42))
+
+converter_func(b'\x80\x03c__main__\nMyObj\nq\x00)\x81q\x01}q\x02X\x0
+3\x00\x00\x00argq\x03X\x17\x00\x00\x00this is a value to saveq\x04sb
+.')
+
+converter_func(b'\x80\x03c__main__\nMyObj\nq\x00)\x81q\x01}q\x02X\x0
+3\x00\x00\x00argq\x03K*sb.')
+
+Retrieved 1 MyObj('this is a value to save')
+  with type <class '__main__.MyObj'>
+
+Retrieved 2 MyObj(42)
+  with type <class '__main__.MyObj'>
+```
+##确定列类型
+
 
 
 
