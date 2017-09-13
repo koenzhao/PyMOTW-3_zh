@@ -696,6 +696,66 @@ Retrieved 2 MyObj(42)
 关系型数据库的关键特征之一就是使用事务维护一致的内部状态。启用事务时，我们通过连接对数据库所做的操作都不会影响到其他数据库的用户，知道我们将操作结果提交并刷新实际的数据库。
 ###保存更改
 通过insert或update子句对数据库进行的更改，都需要我们显式地调用commit()才能被保存。这样的需求为应用提供了一个机会，可以将多个变更操作一起完成，这样他们就是以一种原子的方式保存而不是增量保存，这样做可以避免多个不同用户同时连接数据库只看到部分更新的情况。
+commit()的效果可以通过一个同时使用几个数据库连接的程序看出。在第一个连接中插入一个新行，然后尝试使用两个不同的连接读回这个数据。
+```python
+# sqlite3_transaction_commit.py
+import sqlite3
+
+db_filename = 'todo.db'
+
+
+def show_projects(conn):
+    cursor = conn.cursor()
+    cursor.execute('select name, description from project')
+    for name, desc in cursor.fetchall():
+        print('  ', name)
+
+
+with sqlite3.connect(db_filename) as conn1:
+    print('Before changes:')
+    show_projects(conn1)
+
+    # Insert in one cursor
+    cursor1 = conn1.cursor()
+    cursor1.execute("""
+    insert into project (name, description, deadline)
+    values ('virtualenvwrapper', 'Virtualenv Extensions',
+            '2011-01-01')
+    """)
+
+    print('\nAfter changes in conn1:')
+    show_projects(conn1)
+
+    # Select from another connection, without committing first
+    print('\nBefore commit:')
+    with sqlite3.connect(db_filename) as conn2:
+        show_projects(conn2)
+
+    # Commit then select from another connection
+    conn1.commit()
+    print('\nAfter commit:')
+    with sqlite3.connect(db_filename) as conn3:
+        show_projects(conn3)
+```
+在conn1提交(commit)之前调用show_projects()，显示的结果取决于哪个连接(connection)去调用它。因为我们是通过conn1去修改数据库文件，所以conn1可以看到修改的数据。而conn2看不到。conn1提交之后，conn3也可以看到新插入的行。
+```python
+$ python3 sqlite3_transaction_commit.py
+
+Before changes:
+   pymotw
+
+After changes in conn1:
+   pymotw
+   virtualenvwrapper
+
+Before commit:
+   pymotw
+
+After commit:
+   pymotw
+   virtualenvwrapper
+```
+###丢弃更改
 
 
 
