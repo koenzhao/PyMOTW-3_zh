@@ -142,7 +142,7 @@ $ sqlite3 todo.db 'select * from task'
 3|1|write about sqlite3|active|2017-07-31||pymotw
 ```
 
-##检索数据
+## 检索数据
 在Python程序内，我们可以通过数据库连接创建一个Cursor(游标）去检索保存在任务表中的数据。Cursor(游标)可以产生一致的数据视图，并且这也是与SQLite等事务数据库系统交互的主要方式。
 
 ```python
