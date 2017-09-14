@@ -756,6 +756,7 @@ After commit:
    virtualenvwrapper
 ```
 ###丢弃更改
+未提交的更改也可以通过调用rollback()来完全丢弃。commit()和rollback()方法通常在一个try:except块中的不同部分调用，有时发生错误可以触发回滚。
 
 
 
