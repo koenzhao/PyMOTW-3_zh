@@ -1,4 +1,4 @@
-**目标：使用SQL实现嵌入式关系型数据库**  
+**目标：使用SQL实现嵌入式关系型数据库**
 sqlite3模块针对SQLite实现了兼容Python DB-API 2.0的接口，是一种进程内的关系型数据库。不同于MySQL，PostgreSQL,或者Oracle这一类使用分离型数据服务器的数据库系统，SQLite可以将数据库系统嵌入到应用内。它快速，灵活的特点，使它能适用于某些应用的原型和生产部署。
 ##创建一个数据库
 SQLite的数据库是保存在文件系统中的一个文件。该库可以管理对文件的访问，包括当有多个使用者同时使用它时，能够对文件加锁防止文件损坏。当文件第一次被访问时，数据库就创建好了，应用负责管理数据库内的表定义或模式。
@@ -142,7 +142,7 @@ $ sqlite3 todo.db 'select * from task'
 3|1|write about sqlite3|active|2017-07-31||pymotw
 ```
 
-## 检索数据
+##检索数据
 在Python程序内，我们可以通过数据库连接创建一个Cursor(游标）去检索保存在任务表中的数据。Cursor(游标)可以产生一致的数据视图，并且这也是与SQLite等事务数据库系统交互的主要方式。
 
 ```python
@@ -755,10 +755,72 @@ After commit:
    pymotw
    virtualenvwrapper
 ```
-###丢弃更改
+###  丢弃更改  
 未提交的更改也可以通过调用rollback()来完全丢弃。commit()和rollback()方法通常在一个try:except块中的不同部分调用，有时发生错误可以触发回滚。
+```python
+# sqlite3_transaction_rollback.py
+import sqlite3
+
+db_filename = 'todo.db'
 
 
+def show_projects(conn):
+    cursor = conn.cursor()
+    cursor.execute('select name, description from project')
+    for name, desc in cursor.fetchall():
+        print('  ', name)
+
+
+with sqlite3.connect(db_filename) as conn:
+
+    print('Before changes:')
+    show_projects(conn)
+
+    try:
+
+        # Insert
+        cursor = conn.cursor()
+        cursor.execute("""delete from project
+                       where name = 'virtualenvwrapper'
+                       """)
+
+        # Show the settings
+        print('\nAfter delete:')
+        show_projects(conn)
+
+        # Pretend the processing caused an error
+        raise RuntimeError('simulated error')
+
+    except Exception as err:
+        # Discard the changes
+        print('ERROR:', err)
+        conn.rollback()
+
+    else:
+        # Save the changes
+        conn.commit()
+
+    # Show the results
+    print('\nAfter rollback:')
+    show_projects(conn)
+```
+在调用rollback()之后，对数据库做出的修改就不再存在了。
+```bash
+$ python3 sqlite3_transaction_rollback.py
+
+Before changes:
+   pymotw
+   virtualenvwrapper
+
+After delete:
+   pymotw
+ERROR: simulated error
+
+After rollback:
+   pymotw
+   virtualenvwrapper
+```
+## 隔离级别  
 
 
 
