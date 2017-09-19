@@ -823,7 +823,91 @@ After rollback:
 ## 隔离级别
 sqlite3支持三种锁定模式，我们称之为隔离级别，它会控制使用哪一种技术防止不同连接之间不兼容的更改。当我们打开一个连接(connection)的时候我们可以通过传入一个字符串作为isolation_level的参数来设置隔离级别，所以不同的连接(connection)可以使用不同的隔离级别。
 下面的程序示例演示了连接到同一个数据库的不同连接之间使用不同的隔离级别对线程中事件顺序的影响。创建4个线程。其中2个线程对数据库中已存在的行做update操作。另外两个线程尝试去读task表中所有的行。
+```python
+# sqlite3_isolation_levels.py
+import logging
+import sqlite3
+import sys
+import threading
+import time
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s (%(threadName)-10s) %(message)s',
+)
+
+db_filename = 'todo.db'
+isolation_level = sys.argv[1]
+
+
+def writer():
+    with sqlite3.connect(
+            db_filename,
+            isolation_level=isolation_level) as conn:
+        cursor = conn.cursor()
+        cursor.execute('update task set priority = priority + 1')
+        logging.debug('waiting to synchronize')
+        ready.wait()  # synchronize threads
+        logging.debug('PAUSING')
+        time.sleep(1)
+        conn.commit()
+        logging.debug('CHANGES COMMITTED')
+
+
+def reader():
+    with sqlite3.connect(
+            db_filename,
+            isolation_level=isolation_level) as conn:
+        cursor = conn.cursor()
+        logging.debug('waiting to synchronize')
+        ready.wait()  # synchronize threads
+        logging.debug('wait over')
+        cursor.execute('select * from task')
+        logging.debug('SELECT EXECUTED')
+        cursor.fetchall()
+        logging.debug('results fetched')
+
+
+if __name__ == '__main__':
+    ready = threading.Event()
+
+    threads = [
+        threading.Thread(name='Reader 1', target=reader),
+        threading.Thread(name='Reader 2', target=reader),
+        threading.Thread(name='Writer 1', target=writer),
+        threading.Thread(name='Writer 2', target=writer),
+    ]
+
+    [t.start() for t in threads]
+
+    time.sleep(1)
+    logging.debug('setting ready')
+    ready.set()
+
+    [t.join() for t in threads]
+```
+这些线程通过threading模块的Event对象进行同步。writer()函数连接和修改数据库，但在事件触发之前是不会提交的。reader()函数连接，然后等待同步事件发生后产查询数据库。
+###延迟
+默认的隔离级别是DEFERRED。使用延迟(deferred)模式可以锁定数据库，但只能在修改开始时锁定一次。所有前面的示例都是使用延迟模式。
+```bash
+$ python3 sqlite3_isolation_levels.py DEFERRED
+
+2016-08-20 17:46:26,972 (Reader 1  ) waiting to synchronize
+2016-08-20 17:46:26,972 (Reader 2  ) waiting to synchronize
+2016-08-20 17:46:26,973 (Writer 1  ) waiting to synchronize
+2016-08-20 17:46:27,977 (MainThread) setting ready
+2016-08-20 17:46:27,979 (Reader 1  ) wait over
+2016-08-20 17:46:27,979 (Writer 1  ) PAUSING
+2016-08-20 17:46:27,979 (Reader 2  ) wait over
+2016-08-20 17:46:27,981 (Reader 1  ) SELECT EXECUTED
+2016-08-20 17:46:27,982 (Reader 1  ) results fetched
+2016-08-20 17:46:27,982 (Reader 2  ) SELECT EXECUTED
+2016-08-20 17:46:27,982 (Reader 2  ) results fetched
+2016-08-20 17:46:28,985 (Writer 1  ) CHANGES COMMITTED
+2016-08-20 17:46:29,043 (Writer 2  ) waiting to synchronize
+2016-08-20 17:46:29,043 (Writer 2  ) PAUSING
+2016-08-20 17:46:30,044 (Writer 2  ) CHANGES COMMITTED
+```
 
 
 
