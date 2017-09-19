@@ -908,6 +908,49 @@ $ python3 sqlite3_isolation_levels.py DEFERRED
 2016-08-20 17:46:29,043 (Writer 2  ) PAUSING
 2016-08-20 17:46:30,044 (Writer 2  ) CHANGES COMMITTED
 ```
+###立即
+立即(Immediate)模式下一旦发生更改就会锁定数据库，并阻止其他游标(cursor)在事务(transaction)提交之前做出修改。它适合有复杂写入的数据库，但它的读操作比写操作多，因为读操作在事务(transaction)进行时是不会被阻塞的。
+```bash
+$ python3 sqlite3_isolation_levels.py IMMEDIATE
+
+2016-08-20 17:46:30,121 (Reader 1  ) waiting to synchronize
+2016-08-20 17:46:30,121 (Reader 2  ) waiting to synchronize
+2016-08-20 17:46:30,123 (Writer 1  ) waiting to synchronize
+2016-08-20 17:46:31,122 (MainThread) setting ready
+2016-08-20 17:46:31,122 (Reader 1  ) wait over
+2016-08-20 17:46:31,122 (Reader 2  ) wait over
+2016-08-20 17:46:31,122 (Writer 1  ) PAUSING
+2016-08-20 17:46:31,124 (Reader 1  ) SELECT EXECUTED
+2016-08-20 17:46:31,124 (Reader 2  ) SELECT EXECUTED
+2016-08-20 17:46:31,125 (Reader 2  ) results fetched
+2016-08-20 17:46:31,125 (Reader 1  ) results fetched
+2016-08-20 17:46:32,128 (Writer 1  ) CHANGES COMMITTED
+2016-08-20 17:46:32,199 (Writer 2  ) waiting to synchronize
+2016-08-20 17:46:32,199 (Writer 2  ) PAUSING
+2016-08-20 17:46:33,200 (Writer 2  ) CHANGES COMMITTED
+```
+###互斥
+互斥(Exclusive)模式会对所有的读操作和写操作锁定数据库。在数据库性能十分重要的场景下，应该限制使用这种模式。因为每个互斥(Exclusive)连接都会阻塞其他所有用户。
+```bash
+$ python3 sqlite3_isolation_levels.py EXCLUSIVE
+
+2016-08-20 17:46:33,320 (Reader 1  ) waiting to synchronize
+2016-08-20 17:46:33,320 (Reader 2  ) waiting to synchronize
+2016-08-20 17:46:33,324 (Writer 2  ) waiting to synchronize
+2016-08-20 17:46:34,323 (MainThread) setting ready
+2016-08-20 17:46:34,323 (Reader 1  ) wait over
+2016-08-20 17:46:34,323 (Writer 2  ) PAUSING
+2016-08-20 17:46:34,323 (Reader 2  ) wait over
+2016-08-20 17:46:35,327 (Writer 2  ) CHANGES COMMITTED
+2016-08-20 17:46:35,368 (Reader 2  ) SELECT EXECUTED
+2016-08-20 17:46:35,368 (Reader 2  ) results fetched
+2016-08-20 17:46:35,369 (Reader 1  ) SELECT EXECUTED
+2016-08-20 17:46:35,369 (Reader 1  ) results fetched
+2016-08-20 17:46:35,385 (Writer 1  ) waiting to synchronize
+2016-08-20 17:46:35,385 (Writer 1  ) PAUSING
+2016-08-20 17:46:36,386 (Writer 1  ) CHANGES COMMITTED
+```
+因为第一个写操作已经开始对数据库做出更改，所有读操作和第二个写操作会被阻塞直到第一个写操作提交。sleep()的调用在写操作线程中引入了一个人为的延迟，以强调其他连接已经被阻塞的事实。
 
 
 
