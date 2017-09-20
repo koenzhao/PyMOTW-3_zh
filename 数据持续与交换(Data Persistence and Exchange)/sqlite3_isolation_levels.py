@@ -44,7 +44,8 @@ if __name__ == '__main__':
     ready = threading.Event()
 
     threads = [
-        threading.Thread(name = 'Reader 1', target = reader),               threading.Thread(name = 'Reader 2', target = reader),
+        threading.Thread(name = 'Reader 1', target = reader),
+        threading.Thread(name = 'Reader 2', target = reader),
         threading.Thread(name = 'Writer 1', target = writer),
         threading.Thread(name = 'Writer 2', target = writer),
     ]

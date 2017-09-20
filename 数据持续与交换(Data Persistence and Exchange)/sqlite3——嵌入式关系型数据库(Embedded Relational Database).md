@@ -951,6 +951,26 @@ $ python3 sqlite3_isolation_levels.py EXCLUSIVE
 2016-08-20 17:46:36,386 (Writer 1  ) CHANGES COMMITTED
 ```
 因为第一个写操作已经开始对数据库做出更改，所有读操作和第二个写操作会被阻塞直到第一个写操作提交。sleep()的调用在写操作线程中引入了一个人为的延迟，以强调其他连接已经被阻塞的事实。
+###自动提交
+当没有传入相应的isolation_level参数时或设置为None时，默认启动自动提交模式。在自动提交模式中，每个excute()调用都会在语句结束后马上提交。自动提交模式比较合适一些简短的事务(transaction)，比如向一张表中插入简短的数据。这样数据库锁定的时间会尽可能的短，则线程之间竞争的可能性也会很小。
+在sqlite3_autocommit.py中，我们移除了显式调用commit()，并将isolation_level设置为None，其他部分都与sqlite3_isolation_levels.py一样。但输出不同了，因为在读操作开始查询前，两个写操作都已经完成了。
+```bash
+$ python3 sqlite3_autocommit.py
+
+2016-08-20 17:46:36,451 (Reader 1  ) waiting to synchronize
+2016-08-20 17:46:36,451 (Reader 2  ) waiting to synchronize
+2016-08-20 17:46:36,455 (Writer 1  ) waiting to synchronize
+2016-08-20 17:46:36,456 (Writer 2  ) waiting to synchronize
+2016-08-20 17:46:37,452 (MainThread) setting ready
+2016-08-20 17:46:37,452 (Reader 1  ) wait over
+2016-08-20 17:46:37,452 (Writer 2  ) PAUSING
+2016-08-20 17:46:37,452 (Reader 2  ) wait over
+2016-08-20 17:46:37,453 (Writer 1  ) PAUSING
+2016-08-20 17:46:37,453 (Reader 1  ) SELECT EXECUTED
+2016-08-20 17:46:37,454 (Reader 2  ) SELECT EXECUTED
+2016-08-20 17:46:37,454 (Reader 1  ) results fetched
+2016-08-20 17:46:37,454 (Reader 2  ) results fetched
+```
 
 
 
