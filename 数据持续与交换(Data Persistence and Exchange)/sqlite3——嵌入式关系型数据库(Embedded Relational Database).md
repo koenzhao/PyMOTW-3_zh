@@ -971,7 +971,8 @@ $ python3 sqlite3_autocommit.py
 2016-08-20 17:46:37,454 (Reader 1  ) results fetched
 2016-08-20 17:46:37,454 (Reader 2  ) results fetched
 ```
-
+##内存中数据库
+SQLite支持在RAM中管理整个数据库，而不是依靠磁盘文件。如果在测试运行期间不需要保留数据库，或者实验一个
 
 
 
