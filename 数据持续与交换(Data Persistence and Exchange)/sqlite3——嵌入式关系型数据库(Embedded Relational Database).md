@@ -971,10 +971,85 @@ $ python3 sqlite3_autocommit.py
 2016-08-20 17:46:37,454 (Reader 1  ) results fetched
 2016-08-20 17:46:37,454 (Reader 2  ) results fetched
 ```
+
 ##内存中数据库
-SQLite支持在RAM中管理整个数据库，而不是依靠磁盘文件。如果在测试运行期间不需要保留数据库，或者实验一个
+SQLite支持在RAM中管理整个数据库，而不是依靠磁盘文件。如果在测试运行期间不需要保留数据库，或者实验一个模式或其他数据库功能，此时内存数据库对于自动化测试是十分有用的。我们可以在建立连接的时候使用':memory:'而不是文件名来打开一个内存数据库。每一个':memory:'连接都建立一个独立的数据库实例，所以通过一个游标(cursor)做出的更改不会影响到其他连接。
 
+##导出数据库内容
+内存数据库的内容可以通过连接(connection)中的iterdump()方法保存起来。iterdump()返回的迭代器会生成一系列的字符串，这些字符串共同构成了一系列的SQL指令，从而重新构建数据库的状态。
+```python
+# sqlite3_iterdump.py
+import sqlite3
 
+schema_filename = 'todo_schema.sql'
+
+with sqlite3.connect(':memory:') as conn:
+    conn.row_factory = sqlite3.Row
+
+    print('Creating schema')
+    with open(schema_filename, 'rt') as f:
+        schema = f.read()
+    conn.executescript(schema)
+
+    print('Inserting initial data')
+    conn.execute("""
+    insert into project (name, description, deadline)
+    values ('pymotw', 'Python Module of the Week',
+            '2010-11-01')
+    """)
+    data = [
+        ('write about select', 'done', '2010-10-03',
+         'pymotw'),
+        ('write about random', 'waiting', '2010-10-10',
+         'pymotw'),
+        ('write about sqlite3', 'active', '2010-10-17',
+         'pymotw'),
+    ]
+    conn.executemany("""
+    insert into task (details, status, deadline, project)
+    values (?, ?, ?, ?)
+    """, data)
+
+    print('Dumping:')
+    for text in conn.iterdump():
+        print(text)
+```
+iterdump()适用于将数据库保存成文件，但它最有用的地方在于不需要保存的数据库。这里我们对输出做了一些编辑使它适应界面，但语法是正确的。
+```bash
+$ python3 sqlite3_iterdump.py
+
+Creating schema
+Inserting initial data
+Dumping:
+BEGIN TRANSACTION;
+CREATE TABLE project (
+    name        text primary key,
+    description text,
+    deadline    date
+);
+INSERT INTO "project" VALUES('pymotw','Python Module of the
+Week','2010-11-01');
+DELETE FROM "sqlite_sequence";
+INSERT INTO "sqlite_sequence" VALUES('task',3);
+CREATE TABLE task (
+    id           integer primary key autoincrement not null,
+    priority     integer default 1,
+    details      text,
+    status       text,
+    deadline     date,
+    completed_on date,
+    project      text not null references project(name)
+);
+INSERT INTO "task" VALUES(1,1,'write about
+select','done','2010-10-03',NULL,'pymotw');
+INSERT INTO "task" VALUES(2,1,'write about
+random','waiting','2010-10-10',NULL,'pymotw');
+INSERT INTO "task" VALUES(3,1,'write about
+sqlite3','active','2010-10-17',NULL,'pymotw');
+COMMIT;
+```
+
+##在SQL中使用Python的功能
 
 
 
