@@ -1152,7 +1152,54 @@ Decrypting 'svavfu erivrjvat znexhc'
 Decrypting 'erivfr puncgre vagebf'
 Decrypting 'fhogvgyr'
 ```
+###使用正则表达式查询
+SQLite支持几种与SQL语法关联的特殊用户函数。比如说，一个查询中可以使用regexp()函数依照下面的语法去检查一个列的字符串是否匹配某个正则表达式。
+```sql
+SELECT * FROM table
+WHERE column REGEXP '.*pattern.*'
+```
+以下示例将一个函数与regexp()相关联，以使用Python的re模块来测试值。
+```python
+# sqlite3_regex.py
+import re
+import sqlite3
 
+db_filename = 'todo.db'
+
+
+def regexp(pattern, input):
+    return bool(re.match(pattern, input))
+
+
+with sqlite3.connect(db_filename) as conn:
+    conn.row_factory = sqlite3.Row
+    conn.create_function('regexp', 2, regexp)
+    cursor = conn.cursor()
+
+    pattern = '.*[wW]rite [aA]bout.*'
+
+    cursor.execute(
+        """
+        select id, priority, details, status, deadline from task
+        where details regexp :pattern
+        order by deadline, priority
+        """,
+        {'pattern': pattern},
+    )
+
+    for row in cursor.fetchall():
+        task_id, priority, details, status, deadline = row
+        print('{:2d} [{:d}] {:<25} [{:<8}] ({})'.format(
+            task_id, priority, details, status, deadline))
+```
+以上程序会输出details列和正则表达式匹配的的任务。
+```bash
+$ python3 sqlite3_regex.py
+
+ 1 [9] write about select        [done    ] (2016-04-25)
+ 2 [9] write about random        [done    ] (2016-08-22)
+ 3 [9] write about sqlite3       [active  ] (2017-07-31)
+```
 
 
 
