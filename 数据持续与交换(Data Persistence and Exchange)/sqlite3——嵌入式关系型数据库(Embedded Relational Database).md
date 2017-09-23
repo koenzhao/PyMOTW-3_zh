@@ -1200,9 +1200,58 @@ $ python3 sqlite3_regex.py
  2 [9] write about random        [done    ] (2016-08-22)
  3 [9] write about sqlite3       [active  ] (2017-07-31)
 ```
+##定制聚焦
+聚焦函数可以收集多个独立的数据，并以某种方式汇总。avg(),min(),max(),还有count()都是内置的聚焦函数例子。
+sqlite3使用的聚焦器API定义为一个包含两个方法的类。查询每处理一个数据值就会调用一次step()方法。finalize()方法在查询结束时被调用，并返回聚焦值。下面的示例实现了一个算术模式的聚焦器。它能返回所有输入中出现频率最高的一个值。
+```python
+# sqlite3_create_aggregate.py
+import sqlite3
+import collections
+
+db_filename = 'todo.db'
 
 
+class Mode:
 
+    def __init__(self):
+        self.counter = collections.Counter()
+
+    def step(self, value):
+        print('step({!r})'.format(value))
+        self.counter[value] += 1
+
+    def finalize(self):
+        result, count = self.counter.most_common(1)[0]
+        print('finalize() -> {!r} ({} times)'.format(
+            result, count))
+        return result
+
+
+with sqlite3.connect(db_filename) as conn:
+    conn.create_aggregate('mode', 1, Mode)
+
+    cursor = conn.cursor()
+    cursor.execute("""
+    select mode(deadline) from task where project = 'pymotw'
+    """)
+    row = cursor.fetchone()
+    print('mode(deadline) is:', row[0])
+```
+先使用连接的create_aggregate()方法注册聚焦类。参数是函数名（将在SQL语句中使用），step()函数接收的参数个数，还有要注册的类。
+```bash
+$ python3 sqlite3_create_aggregate.py
+
+step('2016-04-25')
+step('2016-08-22')
+step('2017-07-31')
+step('2016-11-30')
+step('2016-08-20')
+step('2016-11-01')
+finalize() -> '2016-11-01' (1 times)
+mode(deadline) is: 2016-11-01
+```
+##线程和连接共享
+由于历史原因，必须使用旧版本的SQLite，连接对象在线程之间不能共享。每个线程必须针对数据库创建独占的连接。
 
 
 
