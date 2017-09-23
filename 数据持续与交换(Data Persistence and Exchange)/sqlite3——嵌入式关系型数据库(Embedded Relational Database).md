@@ -1050,8 +1050,108 @@ COMMIT;
 ```
 
 ##在SQL中使用Python的功能
+SQL语法支持在查询中调用函数，无论是在select语句中的列列表或where子句中。这个功能使我们能够在查询返回数据之前处理这些数据，还可以用于不同格式之间的转换，执行一些在纯SQL中会显得很笨拙的计算，还有重用应用代码。
+```python
+# sqlite3_create_function.py
+import codecs
+import sqlite3
+
+db_filename = 'todo.db'
 
 
+def encrypt(s):
+    print('Encrypting {!r}'.format(s))
+    return codecs.encode(s, 'rot-13')
+
+
+def decrypt(s):
+    print('Decrypting {!r}'.format(s))
+    return codecs.encode(s, 'rot-13')
+
+
+with sqlite3.connect(db_filename) as conn:
+
+    conn.create_function('encrypt', 1, encrypt)
+    conn.create_function('decrypt', 1, decrypt)
+    cursor = conn.cursor()
+
+    # Raw values
+    print('Original values:')
+    query = "select id, details from task"
+    cursor.execute(query)
+    for row in cursor.fetchall():
+        print(row)
+
+    print('\nEncrypting...')
+    query = "update task set details = encrypt(details)"
+    cursor.execute(query)
+
+    print('\nRaw encrypted values:')
+    query = "select id, details from task"
+    cursor.execute(query)
+    for row in cursor.fetchall():
+        print(row)
+
+    print('\nDecrypting in query...')
+    query = "select id, decrypt(details) from task"
+    cursor.execute(query)
+    for row in cursor.fetchall():
+        print(row)
+
+    print('\nDecrypting...')
+    query = "update task set details = decrypt(details)"
+    cursor.execute(query)
+```
+通过连接的create_function()方法将函数暴露出来。第一个参数是函数的名字（将在SQL语句中使用），然后是该函数需要接收的实参的个数，还有就是需要暴露的Python函数名。
+```bash
+$ python3 sqlite3_create_function.py
+
+Original values:
+(1, 'write about select')
+(2, 'write about random')
+(3, 'write about sqlite3')
+(4, 'finish reviewing markup')
+(5, 'revise chapter intros')
+(6, 'subtitle')
+
+Encrypting...
+Encrypting 'write about select'
+Encrypting 'write about random'
+Encrypting 'write about sqlite3'
+Encrypting 'finish reviewing markup'
+Encrypting 'revise chapter intros'
+Encrypting 'subtitle'
+
+Raw encrypted values:
+(1, 'jevgr nobhg fryrpg')
+(2, 'jevgr nobhg enaqbz')
+(3, 'jevgr nobhg fdyvgr3')
+(4, 'svavfu erivrjvat znexhc')
+(5, 'erivfr puncgre vagebf')
+(6, 'fhogvgyr')
+
+Decrypting in query...
+Decrypting 'jevgr nobhg fryrpg'
+Decrypting 'jevgr nobhg enaqbz'
+Decrypting 'jevgr nobhg fdyvgr3'
+Decrypting 'svavfu erivrjvat znexhc'
+Decrypting 'erivfr puncgre vagebf'
+Decrypting 'fhogvgyr'
+(1, 'write about select')
+(2, 'write about random')
+(3, 'write about sqlite3')
+(4, 'finish reviewing markup')
+(5, 'revise chapter intros')
+(6, 'subtitle')
+
+Decrypting...
+Decrypting 'jevgr nobhg fryrpg'
+Decrypting 'jevgr nobhg enaqbz'
+Decrypting 'jevgr nobhg fdyvgr3'
+Decrypting 'svavfu erivrjvat znexhc'
+Decrypting 'erivfr puncgre vagebf'
+Decrypting 'fhogvgyr'
+```
 
 
 
