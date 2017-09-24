@@ -1252,10 +1252,141 @@ mode(deadline) is: 2016-11-01
 ```
 ##线程和连接共享
 由于历史原因，必须使用旧版本的SQLite，连接对象在线程之间不能共享。每个线程必须针对数据库创建独占的连接。
+```python
+# sqlite3_threading.py
+import sqlite3
+import sys
+import threading
+import time
+
+db_filename = 'todo.db'
+isolation_level = None  # autocommit mode
 
 
+def reader(conn):
+    print('Starting thread')
+    try:
+        cursor = conn.cursor()
+        cursor.execute('select * from task')
+        cursor.fetchall()
+        print('results fetched')
+    except Exception as err:
+        print('ERROR:', err)
 
 
+if __name__ == '__main__':
+    with sqlite3.connect(db_filename,
+                         isolation_level=isolation_level,
+                         ) as conn:
+        t = threading.Thread(name='Reader 1',
+                             target=reader,
+                             args=(conn,),
+                             )
+        t.start()
+        t.join()
+```
+如果尝试在线程间分享一个连接，结果会抛出一个异常。
+```bash
+$ python3 sqlite3_threading.py
+
+Starting thread
+ERROR: SQLite objects created in a thread can only be used in that
+same thread.The object was created in thread id 140735234088960
+and this is thread id 123145307557888
+```
+##限制数据访问
+相对于其他更大型的关系型数据库，SQLite并没有用户访问控制，但确实提供了一些机制来限制访问列。每一个连接都可以安装一个授权函数(authorizer function)，它可以在运行时根据任何所需的标准来授予或拒绝对列的访问。授权函数会在分析SQL语句的时候被调用，并相应地需要传入5个参数.第一个参数是一个动作码，它表明了即将执行操作的类型（读，写，删等）。剩余的参数取决于这个动作码。对于SQLITE_READ操作，其余参数为表名，列名，SQL语句中访问出现的位置（主查询，触发器等），和None。
+```python
+# sqlite3_set_authorizer.py
+import sqlite3
+
+db_filename = 'todo.db'
+
+
+def authorizer_func(action, table, column, sql_location, ignore):
+    print('\nauthorizer_func({}, {}, {}, {}, {})'.format(
+        action, table, column, sql_location, ignore))
+
+    response = sqlite3.SQLITE_OK  # be permissive by default
+
+    if action == sqlite3.SQLITE_SELECT:
+        print('requesting permission to run a select statement')
+        response = sqlite3.SQLITE_OK
+
+    elif action == sqlite3.SQLITE_READ:
+        print('requesting access to column {}.{} from {}'.format(
+            table, column, sql_location))
+        if column == 'details':
+            print('  ignoring details column')
+            response = sqlite3.SQLITE_IGNORE
+        elif column == 'priority':
+            print('  preventing access to priority column')
+            response = sqlite3.SQLITE_DENY
+
+    return response
+
+
+with sqlite3.connect(db_filename) as conn:
+    conn.row_factory = sqlite3.Row
+    conn.set_authorizer(authorizer_func)
+
+    print('Using SQLITE_IGNORE to mask a column value:')
+    cursor = conn.cursor()
+    cursor.execute("""
+    select id, details from task where project = 'pymotw'
+    """)
+    for row in cursor.fetchall():
+        print(row['id'], row['details'])
+
+    print('\nUsing SQLITE_DENY to deny access to a column:')
+    cursor.execute("""
+    select id, priority from task where project = 'pymotw'
+    """)
+    for row in cursor.fetchall():
+        print(row['id'], row['details'])
+```
+上面的示例使用SQLITE_IGNORE，使得查询结果中的task表中的details列的值都被替换成NULL。它还可以通过返回SQLITE_DENY来阻止对task表priority列的访问，如果访问则会导致SQLite抛出一个异常。
+```bash
+$ python3 sqlite3_set_authorizer.py
+
+Using SQLITE_IGNORE to mask a column value:
+
+authorizer_func(21, None, None, None, None)
+requesting permission to run a select statement
+
+authorizer_func(20, task, id, main, None)
+requesting access to column task.id from main
+
+authorizer_func(20, task, details, main, None)
+requesting access to column task.details from main
+  ignoring details column
+
+authorizer_func(20, task, project, main, None)
+requesting access to column task.project from main
+1 None
+2 None
+3 None
+4 None
+5 None
+6 None
+
+Using SQLITE_DENY to deny access to a column:
+
+authorizer_func(21, None, None, None, None)
+requesting permission to run a select statement
+
+authorizer_func(20, task, id, main, None)
+requesting access to column task.id from main
+
+authorizer_func(20, task, priority, main, None)
+requesting access to column task.priority from main
+  preventing access to priority column
+Traceback (most recent call last):
+  File "sqlite3_set_authorizer.py", line 53, in <module>
+    """)
+sqlite3.DatabaseError: access to task.priority is prohibited
+```
+sqlite3中提供了一些可用的动作码，它们常做为常量并带有SQLITE_前缀。每一类SQL语句都可以加标志，也可以控制对单个列的访问。
 
 
 
