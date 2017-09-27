@@ -41,6 +41,40 @@ $ python3 csv_reader.py testlinebreak.csv
 ['Title 1', 'Title 2', 'Title 3']
 ['1', 'first line\nsecond line', '08/18/07']
 ```
+##写操作
+对CSV文件进行写操作就像对它进行读操作一样简单。使用writer()为写操作创建一个对象，然后迭代每一行，使用writerow()将它们写入文件。
+```python
+# csv_writer.py
+import csv
+import sys
+
+unicode_chars = 'å∫ç'
+
+with open(sys.argv[1], 'wt') as f:
+    writer = csv.writer(f)
+    writer.writerow(('Title 1', 'Title 2', 'Title 3', 'Title 4'))
+    for i in range(3):
+        row = (
+            i + 1,
+            chr(ord('a') + i),
+            '08/{:02d}/07'.format(i + 1),
+            unicode_chars[i],
+        )
+        writer.writerow(row)
+
+print(open(sys.argv[1], 'rt').read())
+```
+这个的输出和我们上面使用reader例子的输出不完全一样，因为它的某些值缺少引号。
+```bash
+$ python3 csv_writer.py testout.csv
+
+Title 1,Title 2,Title 3,Title 4
+1,a,08/01/07,å
+2,b,08/02/07,∫
+3,c,08/03/07,ç
+```
+##引号
+对于writer来说，默认引号的行为是不同的，所以上一个例子中第2和第3列没有加引号。如果需要加引号，可以通过设置“引号参数(quoting argument)”设置其他引号模式之一。
 
 
 
