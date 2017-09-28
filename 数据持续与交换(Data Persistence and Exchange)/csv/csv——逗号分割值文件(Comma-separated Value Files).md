@@ -75,9 +75,25 @@ Title 1,Title 2,Title 3,Title 4
 ```
 ##引号
 对于writer来说，默认引号的行为是不同的，所以上一个例子中第2和第3列没有加引号。如果需要加引号，可以通过设置“引号参数(quoting argument)”设置其他引号模式之一。
+```python
+writer = csv.write(f, quoting = csv.QUOTE_NONNUMERIC)
+```
+在这种情况下，QUOTE_NONNUMERIC会为所有的非数字列加上引号。
+```bash
+$ python3 csv_writer_quoted.py testout_quoted.csv
 
+"Title 1","Title 2","Title 3","Title 4"
+1,"a","08/01/07","å"
+2,"b","08/02/07","∫"
+3,"c","08/03/07","ç"
+```
+我们有4种不同的引号选项，定义为csv模块中的常量。
+* QUOTE_ALL:不考虑类型，给所有的列加引号。
+* QUOTE_MINIMAL:这个是默认选项，给所有包含特殊字符的段加引号（特殊字符指，对于相同的方言和配置的解析器，会引起混淆的字符）。
+* QUOTE_NONNUMERIC:对所有的非数字字段加引号。当使用reader时，没有加引号的字段会被转换成浮点数。
+* QUOTE_NONE:对输出的所有内容都不加引号。当使用reader时，引号字符包含在字段值中（正常情况下，他们会处理为定界符并去除）。
 
-
+##方言
 
 
 
