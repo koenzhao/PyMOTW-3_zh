@@ -96,7 +96,19 @@ $ python3 csv_writer_quoted.py testout_quoted.csv
 ##方言
 对于逗号分隔值文件没有明确的定义，所以我们的解析器必须很灵活。这里的灵活是指，我们可以通过很多参数设置去控制如何解析csv文件或写数据。这些参数不会一个一个这样地传给reader或writer，而是会组合成一个方言(dialect)对象传入。
 方言(dialect)对象可以通过名字注册，所以csv模块的调用者(caller)不需要提前知道设置的参数。可以使用list_dialects()获取完整的已注册方言(dialect)列表。
+```python
+# csv_list_dialects.py
 
+import csv
+
+print(csv.list_dialects())
+```
+标准库包括三个方言(dialect):excel,excel-tabs,和unix。excel方言(dialect)可以处理Microsoft Excel和LibreOffice默认输出格式的数据。unix方言(dialect)会用双引号将所有字段括起来，使用“\n”做为记录分隔符。
+```bash
+$ python3 csv_list_dialects.py
+
+['excel', 'excel-tab', 'unix']
+```
 
 
 
