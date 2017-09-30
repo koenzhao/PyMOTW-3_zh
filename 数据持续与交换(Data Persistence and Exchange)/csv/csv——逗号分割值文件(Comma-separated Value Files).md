@@ -1,4 +1,4 @@
-目标：对逗号分隔值文件进行读写操作
+*目标：对逗号分隔值文件进行读写操作*
 csv模块可用于从电子表格和数据库导出的数据，并写入采用字段和记录格式的文本文件。因为经常使用逗号分隔记录中的不同字段，所以这种格式通常称为逗号分隔值文件csv。
 ##读操作
 使用reader()可以为一个csv文件的数据值创建一个对象。阅读器(reader)可以作为一个迭代器按顺序处理文件中的每一行数据。举个例子：
@@ -109,9 +109,44 @@ $ python3 csv_list_dialects.py
 
 ['excel', 'excel-tab', 'unix']
 ```
+####创建一个方言(dialect)
+如果输入文件使用管道(|)分隔字段，而不是使用逗号，如下：
+```csv
+"Title 1"|"Title 2"|"Title 3"
+1|"first line
+second line"|08/18/07
+```
+通过使用适当的分隔符，我们能够注册一个新的方言(dialect)。
+```python
+# csv_dialect.py
+import csv
 
+csv.register_dialect('pipes', delimiter='|')
 
+with open('testdata.pipes', 'r') as f:
+    reader = csv.reader(f, dialect='pipes')
+    for row in reader:
+        print(row)
+```
+通过"pipes"方言(dialect)，文件就可以像CSV文件一样读取。
+```bash
+$ python3 csv_dialect.py
 
+['Title 1', 'Title 2', 'Title 3']
+['1', 'first line\nsecond line', '08/18/07']
+```
+####方言参数
+一个方言指定了解析或写入一个数据文件的记号(token)。下表列出了可以指定文件格式的各个方面，从列分隔符到转义字符。
+CSV方言参数
+|属性|缺省值|含义|
+|:-|:-|:-|
+|delimiter|,|字段分隔符(一个字符)|
+|doublequote|True|这个标志控制quotechar是否成对|
+|escapechar|None|这个字符用来指示一个转义字符|
+|lineterminator|\r\n|writer使用这个字符串来标志一行的终止|
+|quotechar|"|这个字符用来包围特殊值的字段(一个字符)|
+|quoting|QUOTE_MINIMAL|控制前面说到的引号行为|
+|skipinitialspace|Fasle|忽略字段分隔符后面的空白符|
 
 
 
