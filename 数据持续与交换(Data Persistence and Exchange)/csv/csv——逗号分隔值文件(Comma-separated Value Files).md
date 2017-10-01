@@ -147,6 +147,107 @@ CSV方言参数
 |quotechar|"|这个字符用来包围特殊值的字段(一个字符)|
 |quoting|QUOTE_MINIMAL|控制前面说到的引号行为|
 |skipinitialspace|Fasle|忽略字段分隔符后面的空白符|
+```python
+csv_dialect_variations.py
+import csv
+import sys
+
+csv.register_dialect('escaped',
+                     escapechar='\\',
+                     doublequote=False,
+                     quoting=csv.QUOTE_NONE,
+                     )
+csv.register_dialect('singlequote',
+                     quotechar="'",
+                     quoting=csv.QUOTE_ALL,
+                     )
+
+quoting_modes = {
+    getattr(csv, n): n
+    for n in dir(csv)
+    if n.startswith('QUOTE_')
+}
+
+TEMPLATE = '''\
+Dialect: "{name}"
+
+  delimiter   = {dl!r:<6}    skipinitialspace = {si!r}
+  doublequote = {dq!r:<6}    quoting          = {qu}
+  quotechar   = {qc!r:<6}    lineterminator   = {lt!r}
+  escapechar  = {ec!r:<6}
+'''
+
+for name in sorted(csv.list_dialects()):
+    dialect = csv.get_dialect(name)
+
+    print(TEMPLATE.format(
+        name=name,
+        dl=dialect.delimiter,
+        si=dialect.skipinitialspace,
+        dq=dialect.doublequote,
+        qu=quoting_modes[dialect.quoting],
+        qc=dialect.quotechar,
+        lt=dialect.lineterminator,
+        ec=dialect.escapechar,
+    ))
+
+    writer = csv.writer(sys.stdout, dialect=dialect)
+    writer.writerow(
+        ('col1', 1, '10/01/2010',
+         'Special chars: " \' {} to parse'.format(
+             dialect.delimiter))
+    )
+    print()
+```
+上面的程序使用多种不同的方言格式化输出相同的数据。
+```bash
+$ python3 csv_dialect_variations.py
+
+Dialect: "escaped"
+
+  delimiter   = ','       skipinitialspace = 0
+  doublequote = 0         quoting          = QUOTE_NONE
+  quotechar   = '"'       lineterminator   = '\r\n'
+  escapechar  = '\\'
+
+col1,1,10/01/2010,Special chars: \" ' \, to parse
+
+Dialect: "excel"
+
+  delimiter   = ','       skipinitialspace = 0
+  doublequote = 1         quoting          = QUOTE_MINIMAL
+  quotechar   = '"'       lineterminator   = '\r\n'
+  escapechar  = None
+
+col1,1,10/01/2010,"Special chars: "" ' , to parse"
+
+Dialect: "excel-tab"
+
+  delimiter   = '\t'      skipinitialspace = 0
+  doublequote = 1         quoting          = QUOTE_MINIMAL
+  quotechar   = '"'       lineterminator   = '\r\n'
+  escapechar  = None
+
+col1    1       10/01/2010      "Special chars: "" '     to parse"
+
+Dialect: "singlequote"
+
+  delimiter   = ','       skipinitialspace = 0
+  doublequote = 1         quoting          = QUOTE_ALL
+  quotechar   = "'"       lineterminator   = '\r\n'
+  escapechar  = None
+
+'col1','1','10/01/2010','Special chars: " '' , to parse'
+
+Dialect: "unix"
+
+  delimiter   = ','       skipinitialspace = 0
+  doublequote = 1         quoting          = QUOTE_ALL
+  quotechar   = '"'       lineterminator   = '\n'
+  escapechar  = None
+
+"col1","1","10/01/2010","Special chars: "" ' , to parse"
+```
 
 
 
