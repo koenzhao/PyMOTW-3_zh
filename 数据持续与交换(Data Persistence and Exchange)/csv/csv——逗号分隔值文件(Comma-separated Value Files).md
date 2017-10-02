@@ -333,8 +333,66 @@ Parsed:
   '10/01/2010'
   'Special chars " \' , to parse'
 ```
+##使用字段名
+除了处理数据序列，CSV模块包含的类会将数据行处理为字典，以便字段可以命名。DictReader和DictWriter类将数据行翻译成字典而不是列表。可以将字典的键值(key)可以由我们传入，也可以通过输入数据的第一行推断出（当首行是标题行）。
+```python
+# csv_dictreader.py
+import csv
+import sys
 
+with open(sys.argv[1], 'rt') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        print(row)
+```
+基于字典的reader和writer是使用基于序列的类，相同的方法和参数实现的包装类。唯一不同的地方在，reader的API返回的数据行(rows)是字典，而不是列表或元组。
+```bash
+$ python3 csv_dictreader.py testdata.csv
 
+{'Title 2': 'a', 'Title 3': '08/18/07', 'Title 4': 'å', 'Title 1
+': '1'}
+{'Title 2': 'b', 'Title 3': '08/19/07', 'Title 4': '∫', 'Title 1
+': '2'}
+{'Title 2': 'c', 'Title 3': '08/20/07', 'Title 4': 'ç', 'Title 1
+': '3'}
+```
+DictWriter则必须给出字段名称列表，以便它能够知道在输出时候的列顺序。
+```python
+# csv_dictwriter.py
+import csv
+import sys
+
+fieldnames = ('Title 1', 'Title 2', 'Title 3', 'Title 4')
+headers = {
+    n: n
+    for n in fieldnames
+}
+unicode_chars = 'å∫ç'
+
+with open(sys.argv[1], 'wt') as f:
+
+    writer = csv.DictWriter(f, fieldnames=fieldnames)
+    writer.writeheader()
+
+    for i in range(3):
+        writer.writerow({
+            'Title 1': i + 1,
+            'Title 2': chr(ord('a') + i),
+            'Title 3': '08/{:02d}/07'.format(i + 1),
+            'Title 4': unicode_chars[i],
+        })
+
+print(open(sys.argv[1], 'rt').read())
+```
+字段名不会自动写入文件，但可以通过writeheader()方法显示写入。
+```bash
+$ python3 csv_dictwriter.py testout.csv
+
+Title 1,Title 2,Title 3,Title 4
+1,a,08/01/07,å
+2,b,08/02/07,∫
+3,c,08/03/07,ç
+```
 
 
 

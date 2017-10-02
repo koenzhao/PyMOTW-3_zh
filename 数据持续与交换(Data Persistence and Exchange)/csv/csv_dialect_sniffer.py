@@ -29,7 +29,7 @@ for name in sorted(csv.list_dialects()):
 # Guess the dialect for a given sample, and then use the results
 # to parse the data.
 sniffer = csv.Sniffer()
-for name, expected,sample in samples:
+for name,expected,sample in samples:
     print('Dialect: "{}"'.format(name))
     print('In: {}'.format(sample.rstrip()))
     dialect = sniffer.sniff(sample, delimiters=',\t')
