@@ -20,7 +20,39 @@ The quick brown fox jumped over the lazy dog.
 The Quick Brown Fox Jumped Over The Lazy Dog.
 ```
 ##模板
-字符串模板是PEP 292规范的一部分，并替代原来的内置插值语法。
+字符串模板是PEP 292规范的一部分，并替代原来的内置插值语法。使用string.Template插值，前缀添加$字符(如$var)将被识别为一个变量。另外，如果需要将变量与其他文本区分开来，可以使用花括号(如${var})。
+下面这个例子对字符串进行了比较，一个是使用了%操作符的相似字符串插值的字符串模板，另一个是使用str.format()的新的格式化字符串语法。
+```python
+# string_template.py
+import string
+
+values = {'var': 'foo'}
+
+t = string.Template("""
+Variable        : $var
+Escape          : $$
+Variable in text: ${var}iable
+""")
+
+print('TEMPLATE:', t.substitute(values))
+
+s = """
+Variable        : %(var)s
+Escape          : %%
+Variable in text: %(var)siable
+"""
+
+print('INTERPOLATION:', s % values)
+
+s = """
+Variable        : {var}
+Escape          : {{}}
+Variable in text: {var}iable
+"""
+
+print('FORMAT:', s.format(**values))
+```
+
 
 
 
