@@ -53,7 +53,27 @@ Variable in text: {var}iable
 print('FORMAT:', s.format(**values))
 ```
 
+在上面的示例程序中，前两种情况的触发字符($或%)都需要连续输入两次进行转义。对于format的语法，左花括号{和右花括号}都需要重复两次去转义。
+```bash
+$ python3 string_template.py
 
+TEMPLATE:
+Variable        : foo
+Escape          : $
+Variable in text: fooiable
+
+INTERPOLATION:
+Variable        : foo
+Escape          : %
+Variable in text: fooiable
+
+FORMAT:
+Variable        : foo
+Escape          : {}
+Variable in text: fooiable
+```
+模板和字符串插值或format语法一个关键的不同点在于无需考虑参数的类型。输入的值会转换成字符串值，然后将转换后的字符串插入输出结果中。没有格式化选项可用。例如，没有办法控制用于表示浮点数值的位数。
+但是，有一个好处是，使用safe_substitute()方法可以避免，如果不是模板所需的全部值作为参数提供的异常。
 
 
 

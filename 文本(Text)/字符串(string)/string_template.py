@@ -10,7 +10,7 @@ t = string.Template("""
     Variable in text: ${var}iable
 """)
 
-print('TEMPLAT:', t.substitute(values))
+print('TEMPLATE:', t.substitute(values))
 
 s = """
     Variable        : %(var)s
@@ -27,5 +27,3 @@ s = """
 """
 
 print('FORMAT:', s.format(**values))
-
-
