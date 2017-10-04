@@ -74,10 +74,65 @@ Variable in text: fooiable
 ```
 模板和字符串插值或format语法一个关键的不同点在于无需考虑参数的类型。输入的值会转换成字符串值，然后将转换后的字符串插入输出结果中。没有格式化选项可用。例如，没有办法控制用于表示浮点数值的位数。
 但是，有一个好处是，使用safe_substitute()方法可以避免，如果不是模板所需的全部值作为参数提供的异常。
+```python
+# string_template_missing.py
+import string
+
+values = {'var': 'foo'}
+
+t = string.Template("$var is here but $missing is not provided")
+
+try:
+    print('substitute()     :', t.substitute(values))
+except KeyError as err:
+    print('ERROR:', str(err))
+
+print('safe_substitute():', t.safe_substitute(values))
+```
+因为在传入字典中没有missing这个键对应的值，所以substitute()抛出了KeyError。使用safe_substitute()的话，它会捕捉到这个错误，并让变量依然保留在文本中，而不是抛出错误。
+```bash
+$ python3 string_template_missing.py
+
+ERROR: 'missing'
+safe_substitute(): foo is here but $missing is not provided
+```
+##高级模板
+string.Template的默认语法是可以修改的，可以调整正则表达式在模板正文中用于寻找变量名的匹配模式。
+```python
+# string_template_advanced.py
+import string
 
 
+class MyTemplate(string.Template):
+    delimiter = '%'
+    idpattern = '[a-z]+_[a-z]+'
 
 
+template_text = '''
+  Delimiter : %%
+  Replaced  : %with_underscore
+  Ignored   : %notunderscored
+'''
+
+d = {
+    'with_underscore': 'replaced',
+    'notunderscored': 'not replaced',
+}
+
+t = MyTemplate(template_text)
+print('Modified ID pattern:')
+print(t.safe_substitute(d))
+```
+在上面的示例中，替换规则已经发生了变化，所以分隔符变成了%而不是$，变量名中间的某个地方必须包含有下划线。因为%notunderscored没有下划线字符，所以它不会被替换掉。
+```bash
+$ python3 string_template_advanced.py
+
+Modified ID pattern:
+
+  Delimiter : %
+  Replaced  : replaced
+  Ignored   : %notunderscored
+```
 
 
 
