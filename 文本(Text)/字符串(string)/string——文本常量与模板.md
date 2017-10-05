@@ -142,9 +142,93 @@ t = string.Template('$var')
 print(t.pattern.pattern)
 ```
 t.pattern的值是一个已编译的正则表达式，原始字符串对于它的模式属性是有效的。
+```bash
+\$(?:
+  (?P<escaped>\$) |                # two delimiters
+  (?P<named>[_a-z][_a-z0-9]*)    | # identifier
+  {(?P<braced>[_a-z][_a-z0-9]*)} | # braced identifier
+  (?P<invalid>)                    # ill-formed delimiter exprs
+)
+```
+下面的例子定义了一种可以创造新模板类型的新模式，使用`{{var}}`作为可变语法。
+```python
+# string_template_newsyntax.py
+import re
+import string
 
 
+class MyTemplate(string.Template):
+    delimiter = '{{'
+    pattern = r'''
+    \{\{(?:
+    (?P<escaped>\{\{)|
+    (?P<named>[_a-z][_a-z0-9]*)\}\}|
+    (?P<braced>[_a-z][_a-z0-9]*)\}\}|
+    (?P<invalid>)
+    )
+    '''
 
+
+t = MyTemplate('''
+{{{{
+{{var}}
+''')
+
+print('MATCHES:', t.pattern.findall(t.template))
+print('SUBSTITUTED:', t.safe_substitute(var='replacement'))
+```
+命名和支撑的模式必须提前分别给出，即使它们是相同的值。运行上面程序会得到以下输出：
+```bash
+$ python3 string_template_newsyntax.py
+
+MATCHES: [('{{', '', '', ''), ('', 'var', '', '')]
+SUBSTITUTED:
+{{
+replacement
+```
+##格式化
+Formatter类实现了和str中的format()方法相同的布局规范语言。它的功能包括类型强制转换，对齐，属性和字段引用，模板参数支持命名参数和位置参数，以及类型特定的格式化选项。在大多数时候，format()方法能更方便地使用这些功能，Formatter类常用于在需要变体的情况下构建子类。
+##常量
+string模块包含许多与ASCII和数字字符集相关的常量。
+```python
+# string_constants.py
+import inspect
+import string
+
+
+def is_str(value):
+    return isinstance(value, str)
+
+
+for name, value in inspect.getmembers(string, is_str):
+    if name.startswith('_'):
+        continue
+    print('%s=%r\n' % (name, value))
+```
+这些常量在处理ASCII数据的时候十分有用，但是由于现在在Unicode格式文本中遇到非ASCII数据的情况越来越多，所以它的应用的有限制的。
+```bash
+$ python3 string_constants.py
+
+ascii_letters='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+XYZ'
+
+ascii_lowercase='abcdefghijklmnopqrstuvwxyz'
+
+ascii_uppercase='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+digits='0123456789'
+
+hexdigits='0123456789abcdefABCDEF'
+
+octdigits='01234567'
+
+printable='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ
+RSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ \t\n\r\x0b\x0c'
+
+punctuation='!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+
+whitespace=' \t\n\r\x0b\x0c'
+```
 
 
 
