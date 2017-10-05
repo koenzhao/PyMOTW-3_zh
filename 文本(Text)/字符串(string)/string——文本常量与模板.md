@@ -133,8 +133,15 @@ Modified ID pattern:
   Replaced  : replaced
   Ignored   : %notunderscored
 ```
+对于更复杂的更改，可以重写模式参数(pattern attribute)和定义一个全新的正则表达式。新的模式必须包含四个命名组，用于捕获转义的分隔符，命名变量，支撑版本的变量名，以及无效的分隔符模式。
+```python
+# string_template_defaultpattern.py
+import string
 
-
+t = string.Template('$var')
+print(t.pattern.pattern)
+```
+t.pattern的值是一个已编译的正则表达式，原始字符串对于它的模式属性是有效的。
 
 
 
