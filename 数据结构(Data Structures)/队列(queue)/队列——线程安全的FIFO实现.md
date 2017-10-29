@@ -22,6 +22,44 @@ $ python3 queue_fifo.py
 
 0 1 2 3 4
 ```
+##后进先出队列
+与FIFO队列实现相反，LIFO队列遵循后进先出的顺序（通常作为栈数据结构访问）。
+```python
+# queue_lifo.py
+import queue
+
+q = queue.LifoQueue()
+
+for i in range(5):
+    q.put(i)
+
+while not q.empty():
+    print(q.get(), end=' ')
+print()
+```
+最后一个放进去的元素会最先被get()取出来。
+```bash
+$ python3 queue_lifo.py
+
+4 3 2 1 0
+```
+##优先队列
+有时候，队列中元素的处理顺序需要根据这些元素的特征，而不是仅仅依靠它们创建或添加到队列中的顺序。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
