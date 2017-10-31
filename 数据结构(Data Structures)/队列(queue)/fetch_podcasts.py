@@ -36,7 +36,7 @@ def download_enclosures(q):
         response = urllib.request.urlopen(url)
         data = response.read()
         # Save the download file to the current directory
-        mesage('writing to {}'.format(filename))
+        message('writing to {}'.format(filename))
         with open(filename, 'wb') as outfile:
             outfile.write(data)
         q.task_done()
