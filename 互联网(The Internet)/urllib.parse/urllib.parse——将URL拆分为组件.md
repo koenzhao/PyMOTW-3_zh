@@ -21,8 +21,35 @@ params='param', query='query=arg', fragment='frag')
 ```
 尽管返回值像是一个元组，实际上它基于命名元组，这是一种支持通过下标索引和名字属性去访问URL各个部分的元组派生类。属性API不仅对开发人员来说易于使用，还允许访问tuple API未提供的很多值。
 ```python
+# urllib_parse_urlparseattrs.py
+from urllib.parse import urlparse
 
+url = 'http://user:pwd@NetLoc:80/path;param?query=arg#frag'
+parsed = urlparse(url)
+print('scheme  :', parsed.scheme)
+print('netloc  :', parsed.netloc)
+print('path    :', parsed.path)
+print('params  :', parsed.params)
+print('query   :', parsed.query)
+print('fragment:', parsed.fragment)
+print('username:', parsed.username)
+print('password:', parsed.password)
+print('hostname:', parsed.hostname)
+print('port    :', parsed.port)
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
