@@ -106,12 +106,73 @@ url     : http://netloc/path;param?query=arg
 fragment: frag
 ```
 ##反解析
+有几种方法可以将各个分离的URL部分重新汇总到一个字符串中。用于解析的URL对象有一个geturl()方法。
+```python
+# urllib_parse_geturl.py
+from urllib.parse import urlparse
 
+original = 'http://netloc/path;param?query=arg#frag'
+print('ORIG  :', original)
+parsed = urlparse(original)
+print('PARSED:', parsed.geturl())
+```
+geturl()只能处理urlparse()和urlsplit()返回的对象。
+```bash
+$ python3 urllib_parse_geturl.py
 
+ORIG  : http://netloc/path;param?query=arg#frag
+PARSED: http://netloc/path;param?query=arg#frag
+```
+一个包含字符串的常规元组可以使用urlunparse()组合成一个URL。
+```python
+# urllib_parse_urlunparse.py
+from urllib.parse import urlparse, urlunparse
 
+original = 'http://netloc/path;param?query=arg#frag'
+print('ORIG  :', original)
+parsed = urlparse(original)
+print('PARSED:', type(parsed), parsed)
+t = parsed[:]
+print('TUPLE :', type(t), t)
+print('NEW   :', urlunparse(t))
+```
+因为urlparse()返回的ParseResult类型对象可以当成一个元组使用，在上例中，我们显式地创建了一个新的元组来说明urlunparse()也能够处理正常的元组。
+```bash
+$ python3 urllib_parse_urlunparse.py
 
+ORIG  : http://netloc/path;param?query=arg#frag
+PARSED: <class 'urllib.parse.ParseResult'>
+ParseResult(scheme='http', netloc='netloc', path='/path',
+params='param', query='query=arg', fragment='frag')
+TUPLE : <class 'tuple'> ('http', 'netloc', '/path', 'param',
+'query=arg', 'frag')
+NEW   : http://netloc/path;param?query=arg#frag
+```
+如果输入的URL包含多余的部分，在重建URL时会将这些部分舍弃。
+```python
+# urllib_parse_urlunparseextra.py
+from urllib.parse import urlparse, urlunparse
 
+original = 'http://netloc/path;?#'
+print('ORIG  :', original)
+parsed = urlparse(original)
+print('PARSED:', type(parsed), parsed)
+t = parsed[:]
+print('TUPLE :', type(t), t)
+print('NEW   :', urlunparse(t))
+```
+在上例中，原始URL中没有参数，查询和片段。新的url和原始url看起来不一起，但是它符合标准。
+```bash
+$ python3 urllib_parse_urlunparseextra.py
 
+ORIG  : http://netloc/path;?#
+PARSED: <class 'urllib.parse.ParseResult'>
+ParseResult(scheme='http', netloc='netloc', path='/path',
+params='', query='', fragment='')
+TUPLE : <class 'tuple'> ('http', 'netloc', '/path', '', '', '')
+NEW   : http://netloc/path
+```
+##连接
 
 
 
