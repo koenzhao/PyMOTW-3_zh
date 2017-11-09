@@ -173,11 +173,41 @@ TUPLE : <class 'tuple'> ('http', 'netloc', '/path', '', '', '')
 NEW   : http://netloc/path
 ```
 ##连接
+除了解析URL外，urlparse还包括urljoin()方法，可以有相对片段构造绝对URL。
+```python
+# urllib_parse_urljoin.py
+from urllib.parse import urljoin
 
+print(urljoin('http://www.example.com/path/file.html',
+              'anotherfile.html'))
+print(urljoin('http://www.example.com/path/file.html',
+              '../anotherfile.html'))
+```
+在上例中，当计算第二个URL时，路径中的相对部分(“../”)会被自动处理。
+```bash
+$ python3 urllib_parse_urljoin.py
 
+http://www.example.com/path/anotherfile.html
+http://www.example.com/anotherfile.html
+```
+非相对路径的处理与os.path.join()的处理方式相同。
+```python
+# urllib_parse_urljoin_with_path.py
+from urllib.parse import urljoin
 
+print(urljoin('http://www.example.com/path/',
+              '/subpath/file.html'))
+print(urljoin('http://www.example.com/path/',
+              'subpath/file.html'))
+```
+如果要连接到URL的路径以斜杠(/)开头，则URL的路径会被重置到顶级路径。相反，如果没有以斜杠(/)开头，则路径会自动添加到URL路径的后面。
+```bash
+$ python3 urllib_parse_urljoin_with_path.py
 
-
+http://www.example.com/subpath/file.html
+http://www.example.com/path/subpath/file.html
+```
+##编码查询参数
 
 
 
