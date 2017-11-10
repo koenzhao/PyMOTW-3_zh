@@ -208,6 +208,53 @@ http://www.example.com/subpath/file.html
 http://www.example.com/path/subpath/file.html
 ```
 ##编码查询参数
+参数在添加到URL之前，需要编码这些参数。
+```python
+# urllib_parse_urlencode.py
+from urllib.parse import urlencode
+
+query_args = {
+    'q': 'query string',
+    'foo': 'bar',
+}
+encoded_args = urlencode(query_args)
+print('Encoded:', encoded_args)
+```
+编码会替换掉一些特殊字符（如，空格）以确保传给服务器的参数是符合标准的。
+```bash
+$ python3 urllib_parse_urlencode.py
+
+Encoded: q=query+string&foo=bar
+```
+要在查询字符串中使用含有单独变量的序列值，应该在调用urlencode()时将doseq设置为True。
+```python
+# urllib_parse_urlencode_doseq.py
+from urllib.parse import urlencode
+
+query_args = {
+    'foo': ['foo1', 'foo2'],
+}
+print('Single  :', urlencode(query_args))
+print('Sequence:', urlencode(query_args, doseq=True))
+```
+结果是一个查询字符串，其中几个值与同一个名称相关联。
+```bash
+$ python3 urllib_parse_urlencode_doseq.py
+
+Single  : foo=%5B%27foo1%27%2C+%27foo2%27%5D
+Sequence: foo=foo1&foo=foo2
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 
