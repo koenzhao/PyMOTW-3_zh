@@ -244,12 +244,41 @@ $ python3 urllib_parse_urlencode_doseq.py
 Single  : foo=%5B%27foo1%27%2C+%27foo2%27%5D
 Sequence: foo=foo1&foo=foo2
 ```
+解码查询字符串，可以使用parse_qs()或者parse_qsl()。
+```python
+# urllib_parse_parse_qs.py
+from urllib.parse import parse_qs, parse_qsl
 
+encoded = 'foo=foo1&foo=foo2'
 
+print('parse_qs :', parse_qs(encoded))
+print('parse_qsl:', parse_qsl(encoded))
+```
+parse_qs()的返回值是一个名字与值相匹配的字典，parse_qsl()的返回值是一个包含元组的列表，每一个元组包括了名字与值。
+```bash
+$ python3 urllib_parse_parse_qs.py
 
+parse_qs : {'foo': ['foo1', 'foo2']}
+parse_qsl: [('foo', 'foo1'), ('foo', 'foo2')]
+```
+在传递参数给urlencode()时，URL中可能会引起服务端解析错误的查询参数中的特殊字符会被“引用”起来。在本地引用它们并制作安全版本的字符串，可以直接使用quote()或quote_plus()函数。
+```python
+# urllib_parse_quote.py
+from urllib.parse import quote, quote_plus, urlencode
 
+url = 'http://localhost:8080/~hellmann/'
+print('urlencode() :', urlencode({'url': url}))
+print('quote()     :', quote(url))
+print('quote_plus():', quote_plus(url))
+```
+quote_plus()中引用的实现对它所替换的字符更具攻击性。
+```bash
+$ python3 urllib_parse_quote.py
 
-
+urlencode() : url=http%3A%2F%2Flocalhost%3A8080%2F%7Ehellmann%2F
+quote()     : http%3A//localhost%3A8080/%7Ehellmann/
+quote_plus(): http%3A%2F%2Flocalhost%3A8080%2F%7Ehellmann%2F
+```
 
 
 
