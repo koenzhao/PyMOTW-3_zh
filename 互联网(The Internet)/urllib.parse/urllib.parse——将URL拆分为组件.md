@@ -279,7 +279,23 @@ urlencode() : url=http%3A%2F%2Flocalhost%3A8080%2F%7Ehellmann%2F
 quote()     : http%3A//localhost%3A8080/%7Ehellmann/
 quote_plus(): http%3A%2F%2Flocalhost%3A8080%2F%7Ehellmann%2F
 ```
+对引用操作进行反操作，可以使用unquote()或unquote_plus()。
+```python
+# urllib_parse_unquote.py
+from urllib.parse import unquote, unquote_plus
 
+print(unquote('http%3A//localhost%3A8080/%7Ehellmann/'))
+print(unquote_plus(
+    'http%3A%2F%2Flocalhost%3A8080%2F%7Ehellmann%2F'
+))
+```
+这样已编码的值就会被转换为正常的字符串URL。
+```bash
+$ python3 urllib_parse_unquote.py
+
+http://localhost:8080/~hellmann/
+http://localhost:8080/~hellmann/
+```
 
 
 
